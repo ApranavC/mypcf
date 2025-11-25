@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -15,6 +16,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+
+  useEffect(() => {
+    axios.defaults.baseURL = API_URL;
+  }, []);
 
   // Set up axios interceptor for token
   useEffect(() => {
@@ -32,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get('/api/auth/me');
+          const response = await axios.get(`${API_URL}/auth/me`);
           setUser(response.data);
         } catch (error) {
           console.error('Auth check failed:', error);
@@ -47,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       setToken(response.data.token);
       setUser({
         _id: response.data._id,
@@ -65,7 +70,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const response = await axios.post('/api/auth/register', { name, email, password });
+      const response = await axios.post(`${API_URL}/auth/register`, { name, email, password });
       setToken(response.data.token);
       setUser({
         _id: response.data._id,
