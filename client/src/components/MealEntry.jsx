@@ -11,14 +11,15 @@ const MealEntry = () => {
   const [selectedDishes, setSelectedDishes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const [showNewFoodForm, setShowNewFoodForm] = useState(false);
-  const [newFood, setNewFood] = useState({
+  const [newFoodFormIndex, setNewFoodFormIndex] = useState(null);
+  const emptyFood = {
     name: '',
     protein: '',
     carbs: '',
     fats: '',
     calories: ''
-  });
+  };
+  const [newFood, setNewFood] = useState(emptyFood);
   const [addingFood, setAddingFood] = useState(false);
 
   useEffect(() => {
@@ -37,10 +38,15 @@ const MealEntry = () => {
 
   const addDish = () => {
     setSelectedDishes([...selectedDishes, { foodId: '', quantityInGrams: 100 }]);
+    setNewFoodFormIndex(null);
   };
 
   const removeDish = (index) => {
     setSelectedDishes(selectedDishes.filter((_, i) => i !== index));
+    if (newFoodFormIndex === index) {
+      setNewFoodFormIndex(null);
+      setNewFood(emptyFood);
+    }
   };
 
   const updateDish = (index, field, value) => {
@@ -66,8 +72,7 @@ const MealEntry = () => {
     };
   };
 
-  const handleAddFood = async (e) => {
-    e.preventDefault();
+  const handleAddFood = async (index) => {
     if (!newFood.name.trim()) {
       setMessage({ type: 'error', text: 'Food name is required' });
       return;
@@ -75,17 +80,23 @@ const MealEntry = () => {
     setAddingFood(true);
     setMessage(null);
     try {
-      const response = await axios.post(`${API_URL}/food-items`, newFood);
+      const payload = {
+        ...newFood,
+        protein: parseFloat(newFood.protein) || 0,
+        carbs: parseFloat(newFood.carbs) || 0,
+        fats: parseFloat(newFood.fats) || 0,
+        calories: parseFloat(newFood.calories) || 0
+      };
+      const response = await axios.post(`${API_URL}/food-items`, payload);
       setFoodItems((items) => [response.data, ...items]);
-      setShowNewFoodForm(false);
-      setNewFood({
-        name: '',
-        protein: '',
-        carbs: '',
-        fats: '',
-        calories: ''
-      });
-      setMessage({ type: 'success', text: 'Food item created. You can select it now.' });
+      setSelectedDishes((dishes) =>
+        dishes.map((dish, i) =>
+          i === index ? { ...dish, foodId: response.data._id || response.data.id } : dish
+        )
+      );
+      setNewFoodFormIndex(null);
+      setNewFood(emptyFood);
+      setMessage({ type: 'success', text: 'Food item created and added to your meal.' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Error adding food:', error);
@@ -165,89 +176,62 @@ const MealEntry = () => {
 
           <div className="form-group">
             <label>Dishes</label>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-small"
-                onClick={() => setShowNewFoodForm(!showNewFoodForm)}
-              >
-                {showNewFoodForm ? 'Close New Food Form' : "Can't find food? Add new"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={addDish}
-                style={{ marginTop: '10px' }}
-              >
-                + Add Dish
-              </button>
-            </div>
-
-            {showNewFoodForm && (
-              <form onSubmit={handleAddFood} style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                <h4 style={{ marginBottom: '10px' }}>Add New Food Item</h4>
-                <div className="form-group">
-                  <label>Food Name</label>
-                  <input
-                    type="text"
-                    value={newFood.name}
-                    onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                    required
-                    placeholder="e.g., Paneer Bhurji"
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-                  {['protein', 'carbs', 'fats', 'calories'].map((field) => (
-                    <div className="form-group" key={field}>
-                      <label>{field.charAt(0).toUpperCase() + field.slice(1)} (per 100g)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={newFood[field]}
-                        onChange={(e) => setNewFood({ ...newFood, [field]: e.target.value })}
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
-                <button type="submit" className="btn btn-primary" disabled={addingFood}>
-                  {addingFood ? 'Adding...' : 'Save Food'}
-                </button>
-              </form>
-            )}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={addDish}
+              style={{ marginBottom: '15px' }}
+            >
+              + Add Dish
+            </button>
 
             {selectedDishes.map((dish, index) => (
               <div key={index} style={{ 
                 display: 'flex', 
                 gap: '10px', 
-                marginBottom: '10px',
-                alignItems: 'center'
+                marginBottom: '15px',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap'
               }}>
-                <select
-                  value={dish.foodId}
-                  onChange={(e) => updateDish(index, 'foodId', e.target.value)}
-                  required
-                  style={{ flex: 2 }}
-                >
-                  <option value="">Select a food item</option>
-                  {foodItems.map(food => (
-                    <option key={food._id || food.id} value={food._id || food.id}>
-                      {food.name} (per 100g: P: {food.protein}g, C: {food.carbs}g, F: {food.fats}g, Cal: {food.calories})
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={dish.quantityInGrams || 100}
-                  onChange={(e) => updateDish(index, 'quantityInGrams', parseFloat(e.target.value) || 0)}
-                  placeholder="Grams"
-                  required
-                  style={{ flex: 1, maxWidth: '120px' }}
-                />
-                <span style={{ fontSize: '0.9rem', color: '#666', minWidth: '50px' }}>grams</span>
+                <div style={{ flex: 2, minWidth: '220px' }}>
+                  <select
+                    value={dish.foodId}
+                    onChange={(e) => updateDish(index, 'foodId', e.target.value)}
+                    required
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Select a food item</option>
+                    {foodItems.map(food => (
+                      <option key={food._id || food.id} value={food._id || food.id}>
+                        {food.name} (per 100g: P: {food.protein}g, C: {food.carbs}g, F: {food.fats}g, Cal: {food.calories})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    style={{ marginTop: '8px' }}
+                    onClick={() => {
+                      setNewFoodFormIndex(newFoodFormIndex === index ? null : index);
+                      setNewFood(emptyFood);
+                    }}
+                  >
+                    {newFoodFormIndex === index ? 'Hide new food form' : "Can't find food? Add new"}
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={dish.quantityInGrams || 100}
+                    onChange={(e) => updateDish(index, 'quantityInGrams', parseFloat(e.target.value) || 0)}
+                    placeholder="Grams"
+                    required
+                    style={{ width: '120px' }}
+                  />
+                  <span style={{ fontSize: '0.9rem', color: '#666' }}>grams</span>
+                </div>
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
@@ -255,6 +239,63 @@ const MealEntry = () => {
                 >
                   Remove
                 </button>
+
+                {newFoodFormIndex === index && (
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    padding: '15px', 
+                    borderRadius: '8px',
+                    marginTop: '10px',
+                    width: '100%'
+                  }}>
+                    <h4 style={{ marginBottom: '10px' }}>Add New Food Item</h4>
+                    <div className="form-group">
+                      <label>Food Name</label>
+                      <input
+                        type="text"
+                        value={newFood.name}
+                        onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
+                        required
+                        placeholder="e.g., Paneer Bhurji"
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                      {['protein', 'carbs', 'fats', 'calories'].map((field) => (
+                        <div className="form-group" key={field}>
+                          <label>{field.charAt(0).toUpperCase() + field.slice(1)} (per 100g)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={newFood[field]}
+                            onChange={(e) => setNewFood({ ...newFood, [field]: e.target.value })}
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => handleAddFood(index)}
+                        disabled={addingFood}
+                      >
+                        {addingFood ? 'Adding...' : 'Save Food'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setNewFoodFormIndex(null);
+                          setNewFood(emptyFood);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
