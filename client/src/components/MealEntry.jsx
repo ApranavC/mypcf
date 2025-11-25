@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
 const MealEntry = () => {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -207,17 +209,21 @@ const MealEntry = () => {
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-small"
-                    style={{ marginTop: '8px' }}
-                    onClick={() => {
-                      setNewFoodFormIndex(newFoodFormIndex === index ? null : index);
-                      setNewFood(emptyFood);
-                    }}
-                  >
-                    {newFoodFormIndex === index ? 'Hide new food form' : "Can't find food? Add new"}
-                  </button>
+                  {(!dish.foodId || newFoodFormIndex === index) && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-small"
+                      style={{ marginTop: '8px' }}
+                      onClick={() => {
+                        setNewFoodFormIndex(
+                          newFoodFormIndex === index ? null : index
+                        );
+                        setNewFood(emptyFood);
+                      }}
+                    >
+                      {newFoodFormIndex === index ? 'Hide new food form' : "Can't find food? Add new"}
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <input

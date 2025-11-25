@@ -25,57 +25,53 @@ const AppContent = () => {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="header-content">
-          <div>
-            <h1>PCF & Calorie Tracker</h1>
-            <p className="subtitle">Track your daily nutrition intake with precision</p>
-          </div>
-          <div className="user-actions">
-            <p style={{ marginBottom: '5px', fontSize: '0.9rem' }}>Welcome, {user?.name}</p>
-            <button 
-              onClick={logout}
-              className="btn btn-secondary btn-small"
-              style={{ fontSize: '0.85rem' }}
-            >
-              Logout
-            </button>
-          </div>
+      <header className="app-bar">
+        <div className="app-brand">
+          <h1>PCF & Calorie Tracker</h1>
+          <p className="subtitle">Track your daily nutrition intake with precision</p>
+        </div>
+        <nav className="app-nav">
+          <button 
+            className={activeTab === 'dashboard' ? 'active' : ''}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            Dashboard
+          </button>
+          <button 
+            className={activeTab === 'meal' ? 'active' : ''}
+            onClick={() => setActiveTab('meal')}
+          >
+            Add Meal
+          </button>
+          <button 
+            className={activeTab === 'foods' ? 'active' : ''}
+            onClick={() => setActiveTab('foods')}
+          >
+            Food Items
+          </button>
+          <button 
+            className={activeTab === 'upload' ? 'active' : ''}
+            onClick={() => setActiveTab('upload')}
+          >
+            Upload Excel
+          </button>
+          <button 
+            className={activeTab === 'targets' ? 'active' : ''}
+            onClick={() => setActiveTab('targets')}
+          >
+            Targets
+          </button>
+        </nav>
+        <div className="user-actions">
+          <span>Welcome, {user?.name}</span>
+          <button 
+            onClick={logout}
+            className="btn btn-secondary btn-small"
+          >
+            Logout
+          </button>
         </div>
       </header>
-
-      <nav className="nav-tabs">
-        <button 
-          className={activeTab === 'dashboard' ? 'active' : ''}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          Dashboard
-        </button>
-        <button 
-          className={activeTab === 'meal' ? 'active' : ''}
-          onClick={() => setActiveTab('meal')}
-        >
-          Add Meal
-        </button>
-        <button 
-          className={activeTab === 'foods' ? 'active' : ''}
-          onClick={() => setActiveTab('foods')}
-        >
-          Food Items
-        </button>
-        <button 
-          className={activeTab === 'upload' ? 'active' : ''}
-          onClick={() => setActiveTab('upload')}
-        >
-          Upload Excel
-        </button>
-        <button 
-          className={activeTab === 'targets' ? 'active' : ''}
-          onClick={() => setActiveTab('targets')}
-        >
-          Targets
-        </button>
-      </nav>
 
       <main className="app-main">
         {activeTab === 'dashboard' && <Dashboard />}

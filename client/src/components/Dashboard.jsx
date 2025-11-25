@@ -3,7 +3,9 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -12,10 +14,21 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null);
 
   useEffect(() => {
     fetchData();
   }, [selectedDate]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.meal-actions')) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -53,6 +66,7 @@ const Dashboard = () => {
 
   const handleDeleteMeal = async (mealId) => {
     if (!window.confirm('Delete this meal?')) {
+      setOpenMenu(null);
       return;
     }
     try {
@@ -67,6 +81,7 @@ const Dashboard = () => {
       setMessage({ type: 'error', text: 'Failed to delete meal' });
     } finally {
       setDeleting(false);
+      setOpenMenu(null);
     }
   };
 
@@ -228,16 +243,34 @@ const Dashboard = () => {
           <div className="meal-list">
             {intake.meals.map((meal) => (
               <div key={meal._id || meal.id} className="meal-item">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ margin: 0 }}>{meal.type}</h4>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-small"
-                    onClick={() => handleDeleteMeal(meal._id || meal.id)}
-                    disabled={deleting}
-                  >
-                    Delete Meal
-                  </button>
+                <div className="meal-header">
+                  <h4>{meal.type}</h4>
+                  <div className="meal-actions">
+                    <button
+                      type="button"
+                      className="btn btn-tertiary btn-small"
+                      onClick={() =>
+                        setOpenMenu(
+                          openMenu === (meal._id || meal.id) ? null : (meal._id || meal.id)
+                        )
+                      }
+                      aria-label="Meal actions"
+                    >
+                      ⋮
+                    </button>
+                    {openMenu === (meal._id || meal.id) && (
+                      <div className="meal-menu">
+                        <button
+                          type="button"
+                          className="meal-menu-item danger"
+                          onClick={() => handleDeleteMeal(meal._id || meal.id)}
+                          disabled={deleting}
+                        >
+                          Delete meal
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {meal.dishes.map((dish, idx) => (
                   <div key={idx} className="dish-item">
